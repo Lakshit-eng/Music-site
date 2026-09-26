@@ -1,0 +1,14 @@
+.contact-page {
+  padding: 5rem 1.5rem;
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.contact-links {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}

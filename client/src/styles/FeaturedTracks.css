@@ -1,0 +1,11 @@
+.featured-tracks {
+  padding: 2rem 1.5rem 5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.featured-tracks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
