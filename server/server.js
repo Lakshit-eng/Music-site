@@ -1,6 +1,6 @@
 // Entry point of the backend API.
-// Run it with:  npm run dev   (auto-restarts on changes)
-//           or: npm start
+// Run it with: npm run dev
+//            or: npm start
 
 const express = require('express');
 const cors = require('cors');
@@ -12,25 +12,45 @@ const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/authRoutes');
 const songRoutes = require('./routes/songRoutes');
+const cloudinaryRoutes = require('./routes/cloudinary');
 
 const app = express();
 
 // ---------- Core middleware ----------
-app.use(cors({ origin: config.clientUrl }));
+
+app.use(
+  cors({
+    origin: config.clientUrl,
+  })
+);
+
 app.use(express.json());
 
-// Serve uploaded audio/poster files as static assets, e.g.
-// http://localhost:5000/uploads/audio/169...mp3
+// ---------- Legacy local uploads ----------
+//
+// Kept temporarily while migrating to Cloudinary.
+// This can be removed once the Cloudinary migration is confirmed.
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ---------- API routes ----------
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 app.use('/api/auth', authRoutes);
+
 app.use('/api/songs', songRoutes);
 
-// ---------- Error handling (must be last) ----------
+app.use('/api/cloudinary', cloudinaryRoutes);
+
+// ---------- Error handling ----------
+
 app.use(notFound);
 app.use(errorHandler);
+
+// ---------- Start server ----------
 
 connectDB().then(() => {
   app.listen(config.port, () => {

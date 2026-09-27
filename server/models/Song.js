@@ -37,13 +37,24 @@ const songSchema = new mongoose.Schema(
       trim: true,
     },
     audioUrl: {
-      type: String,
-      required: [true, 'An audio file is required'],
-    },
-    posterUrl: {
-      type: String,
-      default: '',
-    },
+  type: String,
+  required: [true, 'An audio file is required'],
+},
+
+audioPublicId: {
+  type: String,
+  default: null,
+},
+
+posterUrl: {
+  type: String,
+  default: '',
+},
+
+posterPublicId: {
+  type: String,
+  default: null,
+},
     published: {
       type: Boolean,
       default: false,

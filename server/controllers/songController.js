@@ -38,46 +38,66 @@ const getAdminSongs = asyncHandler(async (req, res) => {
 
 // POST /api/songs   (multipart/form-data: fields + optional audio + poster)
 const createSong = asyncHandler(async (req, res) => {
-  const { title, artist, category, description, published, featured, position } = req.body;
+  const {
+    title,
+    artist,
+    category,
+    description,
+    published,
+    featured,
+    position,
+    audioUrl,
+    audioPublicId,
+    posterUrl,
+    posterPublicId,
+  } = req.body;
 
-  const audioFile = req.files?.audio?.[0];
-  const posterFile = req.files?.poster?.[0];
-
-  if (!audioFile) {
+  if (!audioUrl) {
     return res.status(400).json({ message: 'An audio file is required.' });
   }
 
-  try {
-    const song = await songService.createSong({
-      title,
-      artist,
-      category,
-      description,
-      published: published === 'true' || published === true,
-      featured: featured === 'true' || featured === true,
-      position: position === '' ? undefined : position,
-      audioUrl: getPublicUrlForUploadedFile(audioFile),
-      posterUrl: posterFile ? getPublicUrlForUploadedFile(posterFile) : '',
-    });
-    res.status(201).json({ song });
-  } catch (err) {
-    // Clean up any files we just uploaded, since the DB record failed.
-    if (audioFile) deleteFileByUrl(getPublicUrlForUploadedFile(audioFile));
-    if (posterFile) deleteFileByUrl(getPublicUrlForUploadedFile(posterFile));
-    throw err;
-  }
+  const song = await songService.createSong({
+    title,
+    artist,
+    category,
+    description,
+    published: published === 'true' || published === true,
+    featured: featured === 'true' || featured === true,
+    position: position === '' ? undefined : position,
+
+    audioUrl,
+    audioPublicId: audioPublicId || null,
+
+    posterUrl: posterUrl || '',
+    posterPublicId: posterPublicId || null,
+  });
+
+  res.status(201).json({ song });
 });
 
 // PUT /api/songs/:id   (multipart/form-data: fields + optional new audio/poster)
 const updateSong = asyncHandler(async (req, res) => {
   const existing = await songService.getSongById(req.params.id);
+
   if (!existing) {
     return res.status(404).json({ message: 'Song not found.' });
   }
 
-  const { title, artist, category, description, published, featured, position, removePoster } = req.body;
-  const audioFile = req.files?.audio?.[0];
-  const posterFile = req.files?.poster?.[0];
+  const {
+    title,
+    artist,
+    category,
+    description,
+    published,
+    featured,
+    position,
+    removePoster,
+
+    audioUrl,
+    audioPublicId,
+    posterUrl,
+    posterPublicId,
+  } = req.body;
 
   const updates = {
     title,
@@ -87,46 +107,45 @@ const updateSong = asyncHandler(async (req, res) => {
     published: published === 'true' || published === true,
     featured: featured === 'true' || featured === true,
   };
-  if (position !== undefined && position !== '') updates.position = position;
 
-  // Only touch audio/poster if a new file was actually uploaded, so
-  // editing text fields never accidentally wipes out existing media.
-  const oldAudioUrl = existing.audioUrl;
-  const oldPosterUrl = existing.posterUrl;
-
-  if (audioFile) updates.audioUrl = getPublicUrlForUploadedFile(audioFile);
-  if (posterFile) updates.posterUrl = getPublicUrlForUploadedFile(posterFile);
-
-  // Explicit "remove poster" with no replacement file selected.
-  const shouldRemovePoster = (removePoster === 'true' || removePoster === true) && !posterFile;
-  if (shouldRemovePoster) updates.posterUrl = '';
-
-  try {
-    const song = await songService.updateSong(req.params.id, updates);
-
-    // Only delete the OLD files after the update has saved successfully.
-    if (audioFile && oldAudioUrl) deleteFileByUrl(oldAudioUrl);
-    if (posterFile && oldPosterUrl) deleteFileByUrl(oldPosterUrl);
-    if (shouldRemovePoster && oldPosterUrl) deleteFileByUrl(oldPosterUrl);
-
-    res.json({ song });
-  } catch (err) {
-    // The update failed - clean up the newly uploaded files, keep the old ones.
-    if (audioFile) deleteFileByUrl(getPublicUrlForUploadedFile(audioFile));
-    if (posterFile) deleteFileByUrl(getPublicUrlForUploadedFile(posterFile));
-    throw err;
+  if (position !== undefined && position !== '') {
+    updates.position = position;
   }
+
+  // Only update audio if a new Cloudinary file was uploaded.
+  if (audioUrl) {
+    updates.audioUrl = audioUrl;
+    updates.audioPublicId = audioPublicId || null;
+  }
+
+  // Update poster if a new Cloudinary file was uploaded.
+  if (posterUrl) {
+    updates.posterUrl = posterUrl;
+    updates.posterPublicId = posterPublicId || null;
+  }
+
+  // Explicitly remove poster when no replacement was uploaded.
+  const shouldRemovePoster =
+    (removePoster === 'true' || removePoster === true) && !posterUrl;
+
+  if (shouldRemovePoster) {
+    updates.posterUrl = '';
+    updates.posterPublicId = null;
+  }
+
+  const song = await songService.updateSong(req.params.id, updates);
+
+  res.json({ song });
 });
 
 // DELETE /api/songs/:id
 const deleteSong = asyncHandler(async (req, res) => {
   const song = await songService.deleteSong(req.params.id);
+
   if (!song) {
     return res.status(404).json({ message: 'Song not found.' });
   }
-  // Best-effort cleanup of the files that belonged to this song.
-  deleteFileByUrl(song.audioUrl);
-  deleteFileByUrl(song.posterUrl);
+
   res.json({ message: 'Song deleted.' });
 });
 
