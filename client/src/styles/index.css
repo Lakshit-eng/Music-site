@@ -1,45 +1,75 @@
 /* ---------- Design tokens ---------- */
+
 :root {
-  --bg: #07070f;
-  --bg-elevated: #0f0f1e;
-  --bg-card: #13132585;
-  --border: #2a2a45;
+  /* Backgrounds */
+  --bg: #0b0a09;
+  --bg-elevated: #121110;
+  --bg-card: #171513;
+  --bg-card-hover: #1d1a17;
 
-  --purple: #8b5cf6;
-  --purple-bright: #a78bfa;
-  --blue: #3b82f6;
-  --indigo: #6366f1;
+  /* Borders */
+  --border: #292521;
+  --border-light: #36312c;
 
-  --text: #f1f1f8;
-  --text-muted: #a3a3c2;
-  --text-faint: #6b6b8f;
+  /* Brand */
+  --accent: #c58a5a;
+  --accent-hover: #d6a477;
+  --accent-light: #e1b78d;
 
-  --radius: 14px;
-  --radius-lg: 22px;
+  /* Typography */
+  --text: #f2ede5;
+  --text-muted: #aaa39a;
+  --text-faint: #706a63;
 
+  /* Status */
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.1);
+  --danger-border: rgba(248, 113, 113, 0.4);
+
+  /* Shape */
+  --radius: 6px;
+  --radius-lg: 10px;
+
+  /* Typography */
   --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
   --font-body: 'Inter', 'Segoe UI', sans-serif;
-
-  --shadow-glow: 0 0 60px rgba(139, 92, 246, 0.25);
 }
+
+
+/* ---------- Base ---------- */
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 html,
 body {
   margin: 0;
   padding: 0;
+
   background: var(--bg);
   color: var(--text);
+
   font-family: var(--font-body);
+
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
   min-height: 100vh;
 }
+
+body {
+  overflow-x: hidden;
+}
+
+
+/* ---------- Typography ---------- */
 
 h1,
 h2,
@@ -48,6 +78,7 @@ h4 {
   font-family: var(--font-display);
   font-weight: 600;
   margin: 0;
+  color: var(--text);
 }
 
 p {
@@ -66,15 +97,21 @@ img {
   display: block;
 }
 
+
+/* ---------- Site shell ---------- */
+
 .site-shell {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+
+  background: var(--bg);
 }
 
 .site-shell main {
   flex: 1;
 }
+
 
 /* ---------- Shared building blocks ---------- */
 
@@ -88,26 +125,43 @@ img {
 .section-heading h1,
 .section-heading h2 {
   font-size: clamp(1.8rem, 4vw, 2.6rem);
-  background: linear-gradient(90deg, var(--purple-bright), var(--blue));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+
+  color: var(--text);
+
   margin-bottom: 0.6rem;
 }
+
+.section-heading p {
+  color: var(--text-muted);
+}
+
+
+/* ---------- Buttons ---------- */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+
   padding: 0.85rem 1.8rem;
-  border-radius: 999px;
+
+  border-radius: var(--radius);
+
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+
   border: 1px solid transparent;
+
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .btn:disabled {
@@ -115,36 +169,55 @@ img {
   cursor: not-allowed;
 }
 
+
+/* Primary */
+
 .btn-primary {
-  background: linear-gradient(90deg, var(--purple), var(--blue));
-  color: #fff;
-  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.35);
+  background: var(--text);
+  color: var(--bg);
+
+  box-shadow: none;
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
+
+  background: var(--accent-light);
 }
+
+
+/* Outline */
 
 .btn-outline {
   background: transparent;
-  border-color: var(--border);
+
+  border-color: var(--border-light);
   color: var(--text);
 }
 
 .btn-outline:hover:not(:disabled) {
-  border-color: var(--purple-bright);
-  color: var(--purple-bright);
+  border-color: var(--accent);
+  color: var(--accent-light);
 }
+
+
+/* Small */
 
 .btn-small {
   padding: 0.4rem 0.9rem;
   font-size: 0.8rem;
 }
 
+
+/* Danger */
+
 .btn-danger:hover:not(:disabled) {
-  border-color: #f87171;
-  color: #f87171;
+  border-color: var(--danger);
+  color: var(--danger);
 }
+
+
+/* ---------- States ---------- */
 
 .state-message {
   text-align: center;
@@ -153,20 +226,57 @@ img {
 }
 
 .state-message.error {
-  color: #f87171;
+  color: var(--danger);
 }
 
 .form-error {
-  background: rgba(248, 113, 113, 0.1);
-  border: 1px solid rgba(248, 113, 113, 0.4);
+  background: var(--danger-bg);
+
+  border: 1px solid var(--danger-border);
+
   color: #fca5a5;
+
   padding: 0.7rem 1rem;
+
   border-radius: var(--radius);
+
   font-size: 0.9rem;
 }
 
+
+/* ---------- Page sections ---------- */
+
 .page-section {
-  padding: 4rem 1.5rem;
+  padding: 5rem 1.5rem;
+
   max-width: 1200px;
   margin: 0 auto;
+}
+
+
+/* ---------- Selection ---------- */
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+
+/* ---------- Scrollbar ---------- */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #302b26;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
