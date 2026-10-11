@@ -11,6 +11,7 @@ import Contact from './pages/Contact';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
+import Beats from './pages/Beats';
 
 // Wraps public pages with the shared navbar/footer.
 // Admin pages (login + dashboard) intentionally use their own simpler
@@ -44,6 +45,13 @@ export default function App() {
       <Route path="/services" element={<PublicLayout><Services /></PublicLayout>} />
       <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
       <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
-    </Routes>
+<Route
+  path="/beats"
+  element={
+    <PublicLayout>
+      <Beats />
+    </PublicLayout>
+  }
+/>    </Routes>
   );
 }

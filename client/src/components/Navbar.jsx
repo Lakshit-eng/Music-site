@@ -7,6 +7,7 @@ const links = [
   { to: '/', label: 'Home' },
   { to: '/produced', label: 'Produced' },
   { to: '/mixed-mastered', label: 'Mixed & Mastered' },
+  { to: '/beats', label: 'Beats' },
   { to: '/services', label: 'Services' },
   { to: '/contact', label: 'Contact' },
 ];
