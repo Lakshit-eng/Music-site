@@ -1,7 +1,11 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+
 import SongForm from '../components/SongForm';
+import BeatForm from '../components/BeatForm';
+
 import {
   fetchAdminSongs,
   createSong,
@@ -11,12 +15,19 @@ import {
   setSongPublished,
   moveSongPosition,
   getMediaUrl,
+  fetchAdminBeats,
+  createBeat,
+  updateBeat,
+  deleteBeat,
+  setBeatPublished,
 } from '../services/api';
+
 import '../styles/Admin.css';
 
 const TABS = [
   { key: 'produced', label: 'Produced' },
   { key: 'mixed_mastered', label: 'Mixed & Mastered' },
+  { key: 'beats', label: 'Beats' },
 ];
 
 export default function AdminDashboard() {
@@ -25,27 +36,42 @@ export default function AdminDashboard() {
 
   const [activeTab, setActiveTab] = useState('produced');
   const [songs, setSongs] = useState([]);
+  const [beats, setBeats] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [showForm, setShowForm] = useState(false);
-  const [editingSong, setEditingSong] = useState(null); // null = adding new
+  const [editingSong, setEditingSong] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState('');
 
-  function loadSongs() {
+  async function loadSongs() {
     setLoading(true);
     setError('');
-    fetchAdminSongs(activeTab)
-      .then(setSongs)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+
+    try {
+      if (activeTab === 'beats') {
+        const data = await fetchAdminBeats();
+        setBeats(data);
+      } else {
+        const data = await fetchAdminSongs(activeTab);
+        setSongs(data);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to load content.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     loadSongs();
     setShowForm(false);
     setEditingSong(null);
+    setActionError();
+
+    // loadSongs uses the currently selected tab.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
@@ -60,66 +86,133 @@ export default function AdminDashboard() {
     setActionError('');
   }
 
-  function openEditForm(song) {
-    setEditingSong(song);
+  function openEditForm(item) {
+    setEditingSong(item);
     setShowForm(true);
+    setActionError('');
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingSong(null);
     setActionError('');
   }
 
   async function handleFormSubmit(formData) {
     setSubmitting(true);
     setActionError('');
+
     try {
       if (editingSong) {
         await updateSong(editingSong._id, formData);
       } else {
         await createSong(formData);
       }
-      setShowForm(false);
-      setEditingSong(null);
-      loadSongs();
+
+      closeForm();
+      await loadSongs();
     } catch (err) {
-      setActionError(err.message);
+      setActionError(err.message || 'Failed to save song.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleBeatSubmit(formData) {
+    setSubmitting(true);
+    setActionError('');
+
+    try {
+      if (editingSong) {
+        await updateBeat(editingSong._id, formData);
+      } else {
+        await createBeat(formData);
+      }
+
+      closeForm();
+      await loadSongs();
+    } catch (err) {
+      setActionError(err.message || 'Failed to save beat.');
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleDelete(song) {
-    const confirmed = window.confirm(`Delete "${song.title}"? This cannot be undone.`);
+    const confirmed = window.confirm(
+      `Delete "${song.title}"? This cannot be undone.`
+    );
+
     if (!confirmed) return;
+
+    setActionError('');
+
     try {
       await deleteSong(song._id);
-      loadSongs();
+      await loadSongs();
     } catch (err) {
-      setActionError(err.message);
+      setActionError(err.message || 'Failed to delete song.');
     }
   }
 
   async function handleToggleFeatured(song) {
+    setActionError('');
+
     try {
       await setSongFeatured(song._id, !song.featured);
-      loadSongs();
+      await loadSongs();
     } catch (err) {
-      setActionError(err.message);
+      setActionError(err.message || 'Failed to update featured status.');
     }
   }
 
   async function handleTogglePublished(song) {
+    setActionError('');
+
     try {
       await setSongPublished(song._id, !song.published);
-      loadSongs();
+      await loadSongs();
     } catch (err) {
-      setActionError(err.message);
+      setActionError(err.message || 'Failed to update song status.');
     }
   }
 
   async function handleMove(song, direction) {
+    setActionError('');
+
     try {
       await moveSongPosition(song._id, direction);
-      loadSongs();
+      await loadSongs();
     } catch (err) {
-      setActionError(err.message);
+      setActionError(err.message || 'Failed to reorder songs.');
+    }
+  }
+
+  async function handleToggleBeatPublished(beat) {
+    setActionError('');
+
+    try {
+      await setBeatPublished(beat._id, !beat.published);
+      await loadSongs();
+    } catch (err) {
+      setActionError(err.message || 'Failed to update beat status.');
+    }
+  }
+
+  async function handleDeleteBeat(beat) {
+    const confirmed = window.confirm(
+      `Delete "${beat.title}"? This cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    setActionError('');
+
+    try {
+      await deleteBeat(beat._id);
+      await loadSongs();
+    } catch (err) {
+      setActionError(err.message || 'Failed to delete beat.');
     }
   }
 
@@ -127,19 +220,27 @@ export default function AdminDashboard() {
     <div className="admin-dashboard">
       <header className="admin-header">
         <h1>Spellze Admin</h1>
+
         <div className="admin-header-right">
           <span>{admin?.email}</span>
-          <button className="btn btn-outline btn-small" onClick={handleLogout}>
+
+          <button
+            className="btn btn-outline btn-small"
+            onClick={handleLogout}
+          >
             Logout
           </button>
         </div>
       </header>
 
+      {/* Dashboard tabs */}
       <div className="admin-tabs">
         {TABS.map((tab) => (
           <button
             key={tab.key}
-            className={`admin-tab ${activeTab === tab.key ? 'active' : ''}`}
+            className={`admin-tab ${
+              activeTab === tab.key ? 'active' : ''
+            }`}
             onClick={() => setActiveTab(tab.key)}
           >
             {tab.label}
@@ -147,34 +248,62 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {/* Add button */}
       <div className="admin-toolbar">
         <button className="btn btn-primary" onClick={openAddForm}>
-          + Add Song
+          {activeTab === 'beats' ? '+ Add Beat' : '+ Add Song'}
         </button>
       </div>
 
-      {actionError && <p className="form-error">{actionError}</p>}
+      {actionError && (
+        <p className="form-error">{actionError}</p>
+      )}
 
+      {/* Song or beat form */}
       {showForm && (
         <div className="admin-form-panel">
-          <h2>{editingSong ? 'Edit Song' : 'Add Song'}</h2>
-          <SongForm
-            song={editingSong}
-            defaultCategory={activeTab}
-            submitting={submitting}
-            onSubmit={handleFormSubmit}
-            onCancel={() => {
-              setShowForm(false);
-              setEditingSong(null);
-            }}
-          />
+          <h2>
+            {editingSong
+              ? activeTab === 'beats'
+                ? 'Edit Beat'
+                : 'Edit Song'
+              : activeTab === 'beats'
+                ? 'Add Beat'
+                : 'Add Song'}
+          </h2>
+
+          {activeTab === 'beats' ? (
+            <BeatForm
+              beat={editingSong}
+              submitting={submitting}
+              onSubmit={handleBeatSubmit}
+              onCancel={closeForm}
+            />
+          ) : (
+            <SongForm
+              song={editingSong}
+              defaultCategory={activeTab}
+              submitting={submitting}
+              onSubmit={handleFormSubmit}
+              onCancel={closeForm}
+            />
+          )}
         </div>
       )}
 
-      {loading && <p className="state-message">Loading songs…</p>}
-      {error && <p className="state-message error">{error}</p>}
+      {/* Loading and errors */}
+      {loading && (
+        <p className="state-message">
+          {activeTab === 'beats' ? 'Loading beats…' : 'Loading songs…'}
+        </p>
+      )}
 
-      {!loading && !error && (
+      {error && (
+        <p className="state-message error">{error}</p>
+      )}
+
+      {/* Produced and Mixed & Mastered table */}
+      {activeTab !== 'beats' && !loading && !error && (
         <table className="admin-table">
           <thead>
             <tr>
@@ -187,6 +316,7 @@ export default function AdminDashboard() {
               <th>Actions</th>
             </tr>
           </thead>
+
           <tbody>
             {songs.length === 0 && (
               <tr>
@@ -195,33 +325,48 @@ export default function AdminDashboard() {
                 </td>
               </tr>
             )}
+
             {songs.map((song, index) => (
               <tr key={song._id}>
                 <td>
                   {song.posterUrl ? (
-                    <img className="admin-thumb" src={getMediaUrl(song.posterUrl)} alt={song.title} />
+                    <img
+                      className="admin-thumb"
+                      src={getMediaUrl(song.posterUrl)}
+                      alt={song.title}
+                    />
                   ) : (
-                    <div className="admin-thumb admin-thumb-fallback">🎵</div>
+                    <div className="admin-thumb admin-thumb-fallback">
+                      🎵
+                    </div>
                   )}
                 </td>
+
                 <td>{song.title}</td>
                 <td>{song.artist}</td>
+
                 <td>
                   <button
-                    className={`status-pill ${song.published ? 'on' : 'off'}`}
+                    className={`status-pill ${
+                      song.published ? 'on' : 'off'
+                    }`}
                     onClick={() => handleTogglePublished(song)}
                   >
                     {song.published ? 'Published' : 'Draft'}
                   </button>
                 </td>
+
                 <td>
                   <button
-                    className={`status-pill ${song.featured ? 'on' : 'off'}`}
+                    className={`status-pill ${
+                      song.featured ? 'on' : 'off'
+                    }`}
                     onClick={() => handleToggleFeatured(song)}
                   >
                     {song.featured ? 'Featured' : 'Not Featured'}
                   </button>
                 </td>
+
                 <td>
                   <div className="order-buttons">
                     <button
@@ -232,6 +377,7 @@ export default function AdminDashboard() {
                     >
                       ↑
                     </button>
+
                     <button
                       className="btn btn-outline btn-small"
                       disabled={index === songs.length - 1}
@@ -242,14 +388,107 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 </td>
+
                 <td>
                   <div className="row-actions">
-                    <button className="btn btn-outline btn-small" onClick={() => openEditForm(song)}>
+                    <button
+                      className="btn btn-outline btn-small"
+                      onClick={() => openEditForm(song)}
+                    >
                       Edit
                     </button>
+
                     <button
                       className="btn btn-outline btn-small btn-danger"
                       onClick={() => handleDelete(song)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Beats management table */}
+      {activeTab === 'beats' && !loading && !error && (
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Artwork</th>
+              <th>Beat</th>
+              <th>Details</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {beats.length === 0 && (
+              <tr>
+                <td colSpan={5} className="state-message">
+                  No beats uploaded yet.
+                </td>
+              </tr>
+            )}
+
+            {beats.map((beat) => (
+              <tr key={beat._id}>
+                <td>
+                  {beat.artworkUrl ? (
+                    <img
+                      className="admin-thumb"
+                      src={getMediaUrl(beat.artworkUrl)}
+                      alt={beat.title}
+                    />
+                  ) : (
+                    <div className="admin-thumb admin-thumb-fallback">
+                      🎵
+                    </div>
+                  )}
+                </td>
+
+                <td>
+                  <strong>{beat.title}</strong>
+                  <div>{beat.producer || 'Spellze'}</div>
+                </td>
+
+                <td>
+                  {[
+                    beat.genre,
+                    beat.bpm ? `${beat.bpm} BPM` : '',
+                    beat.key,
+                    beat.mood,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ') || '—'}
+                </td>
+
+                <td>
+                  <button
+                    className={`status-pill ${
+                      beat.published ? 'on' : 'off'
+                    }`}
+                    onClick={() => handleToggleBeatPublished(beat)}
+                  >
+                    {beat.published ? 'Published' : 'Draft'}
+                  </button>
+                </td>
+
+                <td>
+                  <div className="row-actions">
+                    <button
+                      className="btn btn-outline btn-small"
+                      onClick={() => openEditForm(beat)}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      className="btn btn-outline btn-small btn-danger"
+                      onClick={() => handleDeleteBeat(beat)}
                     >
                       Delete
                     </button>

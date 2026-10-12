@@ -140,43 +140,33 @@ export async function getCloudinarySignature() {
  * - format
  * etc.
  */
-export async function uploadToCloudinary(file) {
+export async function uploadToCloudinary(file, resourceType = 'auto') {
   if (!file) {
     throw new Error('No file was provided for upload.');
   }
 
   try {
-    // Ask our backend for a signed upload.
-    const {
-      timestamp,
-      signature,
-      cloudName,
-      apiKey,
-    } = await getCloudinarySignature();
+    const { timestamp, signature, cloudName, apiKey } =
+      await getCloudinarySignature();
 
     const formData = new FormData();
-
     formData.append('file', file);
     formData.append('api_key', apiKey);
     formData.append('timestamp', timestamp);
     formData.append('signature', signature);
     formData.append('folder', 'spellze');
 
-    // Direct browser → Cloudinary upload.
     const res = await axios.post(
-      `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
       formData
     );
 
     return res.data;
   } catch (err) {
-    console.error('Cloudinary upload error:', err);
-
     throw new Error(
       err.response?.data?.error?.message ||
-        err.response?.data?.message ||
-        err.message ||
-        'Cloudinary upload failed.'
+      err.message ||
+      'Cloudinary upload failed.'
     );
   }
 }
@@ -196,6 +186,61 @@ export async function fetchAdminSongs(category) {
     throw new Error(readableError(err));
   }
 }
+
+
+export async function fetchPublicBeats() {
+  try {
+    const res = await api.get('/api/beats');
+    return res.data.beats;
+  } catch (err) {
+    throw new Error(readableError(err));
+  }
+}
+
+export async function fetchAdminBeats() {
+  try {
+    const res = await api.get('/api/beats/admin/all');
+    return res.data.beats;
+  } catch (err) {
+    throw new Error(readableError(err));
+  }
+}
+
+export async function createBeat(beatData) {
+  try {
+    const res = await api.post('/api/beats', beatData);
+    return res.data.beat;
+  } catch (err) {
+    throw new Error(readableError(err));
+  }
+}
+
+export async function updateBeat(id, beatData) {
+  try {
+    const res = await api.put(`/api/beats/${id}`, beatData);
+    return res.data.beat;
+  } catch (err) {
+    throw new Error(readableError(err));
+  }
+}
+
+export async function setBeatPublished(id, published) {
+  try {
+    const res = await api.patch(`/api/beats/${id}/published`, { published });
+    return res.data.beat;
+  } catch (err) {
+    throw new Error(readableError(err));
+  }
+}
+
+export async function deleteBeat(id) {
+  try {
+    await api.delete(`/api/beats/${id}`);
+  } catch (err) {
+    throw new Error(readableError(err));
+  }
+}
+
 
 /**
  * Create a song.

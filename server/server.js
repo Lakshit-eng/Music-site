@@ -13,6 +13,7 @@ const { errorHandler, notFound } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/authRoutes');
 const songRoutes = require('./routes/songRoutes');
 const cloudinaryRoutes = require('./routes/cloudinary');
+const beatRoutes = require('./routes/beatRoutes');
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/songs', songRoutes);
 
 app.use('/api/cloudinary', cloudinaryRoutes);
+app.use('/api/beats', beatRoutes);
 
 // ---------- Error handling ----------
 
